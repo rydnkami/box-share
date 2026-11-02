@@ -1,0 +1,12 @@
+{
+  "supabaseUrl": "https://vrqeitjcbstgnxufcrff.supabase.co",
+  "publishableKey": "sb_publishable_1gIKUfRQ_UoucTiKqtMCsA_Yggv0HIJ",
+  "shareUrlBase": "https://vrqeitjcbstgnxufcrff.supabase.co/functions/v1/box-share?app=",
+  "scheme": "box",
+  "androidPackage": "com.amitseren.box",
+  "install": {
+    "ios": "",
+    "android": "https://expo.dev/artifacts/eas/hB7Oaq_uKuSmzPafV89yLyJ8aCPgboZLLYD_-AJghXE.apk"
+  },
+  "webOpen": "links"
+}

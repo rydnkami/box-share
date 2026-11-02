@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://vrqeitjcbstgnxufcrff.supabase.co; connect-src 'self' https://vrqeitjcbstgnxufcrff.supabase.co; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f6fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1019" media="(prefers-color-scheme: dark)">
+<title>שיתפו איתכם אפליקציה ב־BOX</title>
+<meta name="description" content="An app was shared with you on BOX. Open it in BOX, or get BOX first.">
+<meta property="og:title" content="An app was shared with you on BOX · שיתפו איתכם אפליקציה ב־BOX">
+<meta property="og:description" content="Open it in BOX, or get BOX first. · פתחו ב־BOX, או התקינו את BOX קודם.">
+<meta property="og:type" content="website">
+<!-- Absolute, because crawlers need it. The alpha host (docs/share-flow.md section 14): a GitHub Pages project site, so everything else
+     on the page is relative and works under /box-share/ as well as at a root. core.test.mjs checks both. -->
+<meta property="og:url" content="https://rydnkami.github.io/box-share/">
+<meta property="og:image" content="https://rydnkami.github.io/box-share/og.png">
+<meta property="og:image:width" content="256">
+<meta property="og:image:height" content="256">
+<meta property="og:image:alt" content="BOX">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://rydnkami.github.io/box-share/og.png">
+<link rel="icon" href="og.png">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="share.js"></script>
+</head>
+<body>
+<main>
+  <section id="card" class="card" aria-live="polite" aria-busy="true">
+    <p class="muted">טוען… · Loading…</p>
+    <noscript>
+      <p>כדי להמשיך יש להפעיל JavaScript, או לפתוח את הקישור באפליקציית BOX.</p>
+      <p lang="en" dir="ltr">Turn on JavaScript to continue, or open this link in the BOX app.</p>
+    </noscript>
+  </section>
+  <footer>
+    <button id="lang-toggle" type="button" class="link" lang="en">English</button>
+    <p id="privacy" class="muted small"></p>
+  </footer>
+</main>
+</body>
+</html>

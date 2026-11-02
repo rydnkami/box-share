@@ -1,0 +1,5 @@
+# Indexing is turned off by the robots meta tag (and, on hosts that read _headers, the X-Robots-Tag header). Crawling stays allowed so
+# chat apps can build link previews. On the alpha host the page lives under /box-share/, where crawlers do not read this file (they read
+# robots.txt only at the root of a host); it is kept for a host at a root, and the default there is the same.
+User-agent: *
+Disallow:
