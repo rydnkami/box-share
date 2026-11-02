@@ -7,6 +7,5 @@
   "install": {
     "ios": "",
     "android": "https://expo.dev/artifacts/eas/hB7Oaq_uKuSmzPafV89yLyJ8aCPgboZLLYD_-AJghXE.apk"
-  },
-  "webOpen": "off"
+  }
 }

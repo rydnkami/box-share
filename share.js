@@ -1,8 +1,8 @@
 // The share page, DOM part (docs/share-flow.md section 6). Every catalog value goes in through textContent; no HTML string is ever parsed (core.test.mjs checks).
 // No cookies, no storage, no analytics: the only requests are config.json and one read-only catalog query with the public key.
 import {
-  appView, catalogQuery, detectPlatform, fitsDevice, getBoxLabel, installUrl, noInstallNote, openInBoxUrl, pageUrl, pickLang, readConfig, readParams,
-  shareLink, t,
+  appView, catalogQuery, detectPlatform, fitsDevice, getBoxLabel, installUrl, noInstallNote, openInBoxUrl, pageUrl, pickLang, platformChips, readConfig, runsInBox,
+  readParams, shareLink, t,
 } from './core.js';
 
 const params = readParams(location.search);
@@ -130,13 +130,14 @@ function header(card) {
     card.append(by);
   }
   if (view.summary) card.append(el('p', { className: 'summary', dir: 'auto' }, view.summary));
-  const pls = ['ios', 'android', 'web'].filter((p) => view.platforms[p]);
+  const pls = platformChips(view);
   if (pls.length) {
     const row = el('p', { className: 'platforms' });
     row.append(document.createTextNode(t(lang, 'platforms') + ' '));
     pls.forEach((p) => row.append(el('span', { className: 'chip' }, t(lang, p))));
     card.append(row);
   }
+  if (runsInBox(view)) card.append(el('p', { className: 'platforms' }, t(lang, 'runsInBox')));
 }
 
 function message(card, titleKey, bodyKey) {
@@ -182,7 +183,6 @@ function render() {
         getBoxBlock(card, false);
       }
     } else getBoxBlock(card, false);
-    if (view.webOpenUrl) card.append(link(t(lang, 'openWeb'), view.webOpenUrl, 'ghost'));
     linkBox(card);
     card.append(el('p', { className: 'muted small' }, t(lang, 'howTo')));
   } else if (state === 'missing') {

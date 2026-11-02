@@ -25,7 +25,6 @@ export function readConfig(raw) {
     scheme: typeof c.scheme === 'string' && /^[a-z][a-z0-9+.-]{0,30}$/.test(c.scheme) ? c.scheme : 'box',
     androidPackage: typeof c.androidPackage === 'string' && /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$/.test(c.androidPackage) ? c.androidPackage : '',
     install: { ios: isHttps(install.ios) ? install.ios : '', android: isHttps(install.android) ? install.android : '' },
-    webOpen: c.webOpen === 'links' ? 'links' : 'off',
   };
 }
 
@@ -102,20 +101,6 @@ export function catalogQuery(config, id) {
   return `${config.supabaseUrl}/rest/v1/mini_apps?select=${encodeURIComponent(select)}&id=eq.${id.toLowerCase()}&status=eq.published&limit=1`;
 }
 
-const STORE_HOSTS = /(^|\.)(apps\.apple\.com|itunes\.apple\.com|testflight\.apple\.com|play\.google\.com)$/i;
-const BINARY = /\.(apk|aab|ipa|xapk|apks)$/i;
-
-/** True for an address "Open in the browser now" may offer: an external https web link. Never a file hosted on BOX's Supabase (that
- *  waits for an isolated origin, docs/decisions.md), never a store page or a binary. */
-export function isWebOpenable(url, config) {
-  if (!isHttps(url)) return false;
-  const u = new URL(url);
-  if (config.supabaseUrl && u.origin === config.supabaseUrl) return false;
-  if (/\.supabase\.(co|in)$/i.test(u.hostname)) return false;
-  if (STORE_HOSTS.test(u.hostname) || BINARY.test(u.pathname)) return false;
-  return true;
-}
-
 /** Text from the catalog, made safe for a single line: control and bidi-override characters removed, whitespace collapsed, capped. Shown
  *  through textContent only. */
 export function cleanText(value, max) {
@@ -148,8 +133,6 @@ export function appView(row, config, id) {
   const packages = Array.isArray(row.mini_app_packages) ? row.mini_app_packages.filter((p) => p && typeof p === 'object') : [];
   const has = (pl) => packages.some((p) => p.platform === pl && typeof p.url === 'string' && p.url);
   const web = isHttps(row.launch_url) || has('web');
-  const webPkg = packages.find((p) => p.platform === 'web' && isWebOpenable(p.url, config));
-  const webOpenUrl = config.webOpen !== 'links' ? '' : isWebOpenable(row.launch_url, config) ? row.launch_url : webPkg ? webPkg.url : '';
   return {
     id: row.id.toLowerCase(),
     name: cleanText(row.name, 80) || 'BOX',
@@ -159,11 +142,22 @@ export function appView(row, config, id) {
     iconUrl: safeIconUrl(row.icon_url, config),
     color: cleanColor(row.color),
     platforms: { ios: has('ios'), android: has('android'), web },
-    webOpenUrl,
   };
 }
 
-/** Whether this device can use the app once it is in BOX: a package for its platform, or a web version. */
+/** The "Available for" chips: platforms only. The page never offers the app outside BOX (owner rule, docs/decisions.md): an app with
+ *  a version that runs in BOX on any device (`platforms.web`, technically a web package) shows iPhone and Android; a native-only app
+ *  shows only the platform it has (an APK-only app stays Android only). */
+export function platformChips(view) {
+  if (!view) return [];
+  const { ios, android, web } = view.platforms;
+  return [ios || web ? 'ios' : '', android || web ? 'android' : ''].filter(Boolean);
+}
+
+/** Whether to add the "Runs in BOX" line under the chips: a property of the app, not a platform, so it is not one of the chips. */
+export const runsInBox = (view) => !!view && view.platforms.web;
+
+/** Whether this device can use the app once it is in BOX: a package for its platform, or a version that runs in BOX on any device. */
 export const fitsDevice = (view, platform) =>
   !!view && (view.platforms.web || (platform === 'ios' && view.platforms.ios) || (platform === 'android' && view.platforms.android) || platform === 'desktop');
 
@@ -172,15 +166,14 @@ export const STRINGS = {
     title: 'שיתפו איתכם אפליקציה ב־BOX',
     loading: 'טוען…',
     by: 'מאת',
-    platforms: 'זמין ל:',
+    platforms: 'זמינה ל:',
     ios: 'iPhone',
     android: 'Android',
-    web: 'דפדפן',
+    runsInBox: 'האפליקציה פועלת בתוך BOX, באייפון ובאנדרואיד.',
     openInBox: 'פתיחה ב־BOX',
     getBox: 'להורדת BOX',
     getBoxFirst: 'עוד אין לכם BOX? מתחילים כאן',
     copyForLater: 'העתקת הקישור לשימוש אחרי ההתקנה',
-    openWeb: 'פתיחה בדפדפן עכשיו',
     copied: 'הקישור הועתק. אחרי ההתקנה פותחים את BOX, לוחצים "הדבקת קישור" ואז "הדבקה".',
     copyFailed: 'לא הצלחנו להעתיק אוטומטית. העתיקו את הקישור למטה לפני ההתקנה, ואז פתחו את BOX, לחצו "הדבקת קישור" ואז "הדבקה".',
     continueInstall: 'המשך להתקנה',
@@ -216,12 +209,11 @@ export const STRINGS = {
     platforms: 'Available for:',
     ios: 'iPhone',
     android: 'Android',
-    web: 'Browser',
+    runsInBox: 'The app runs inside BOX, on iPhone and Android.',
     openInBox: 'Open in BOX',
     getBox: 'Get BOX',
     getBoxFirst: "Don't have BOX yet? Start here",
     copyForLater: 'Copy the link for after installing',
-    openWeb: 'Open in the browser now',
     copied: 'Link copied. After installing, open BOX, tap "Paste a link" and then Paste.',
     copyFailed: 'We couldn\'t copy it automatically. Copy the link below before installing, then open BOX, tap "Paste a link" and then Paste.',
     continueInstall: 'Continue to install',
