@@ -15,6 +15,23 @@ let view = null;
 let note = ''; // a status line after Get BOX: '' | 'copied' | 'copyFailed'
 // BOX looks missing: Android came back through the intent fallback (nobox=1), or iOS stayed on the page after "Open in BOX".
 let nobox = params.nobox;
+// Best-effort automatic handoff on mobile. Browsers may block app launches without a user gesture.
+// Only try once, for a confirmed published app, and never after the Android fallback (?nobox=1).
+let autoOpenAttempted = false;
+function tryAutoOpenBox() {
+  if (autoOpenAttempted || nobox || state !== 'found' || !params.id || platform === 'desktop') return;
+  autoOpenAttempted = true;
+  // Avoid triggering a navigation before the page has rendered its manual fallback.
+  const fallback = pageUrl(location.origin, location.pathname, params.id, { lang, nobox: '1' });
+  const target = openInBoxUrl(platform, params.id, config, fallback);
+  if (!target) return;
+  // Android Chrome generally requires a user gesture for intent:// launches. We still attempt it
+  // once; if the browser rejects it, the existing "Open in BOX" button remains available.
+  setTimeout(() => {
+    if (document.visibilityState === 'hidden') return;
+    try { window.location.assign(target); } catch { /* manual button remains available */ }
+  }, 150);
+}
 
 const $ = (id) => document.getElementById(id);
 
@@ -230,6 +247,7 @@ async function load() {
     state = 'error';
   }
   setLang(lang);
+  tryAutoOpenBox();
 }
 
 $('lang-toggle').addEventListener('click', () => setLang(lang === 'he' ? 'en' : 'he'));
