@@ -28,14 +28,18 @@ export function readConfig(raw) {
   };
 }
 
-/** What the page was opened with. `state`: 'none' (no app parameter), 'invalid' or 'ok'. */
+/** What the page was opened with. `state`: 'none' (no app parameter), 'invalid' or 'ok'; 'box' for a box link (docs/boxes.md section 8.3),
+ *  whose id is `box`. An `app` parameter wins over `box` (that is an app link). */
 export function readParams(search) {
   const p = new URLSearchParams(typeof search === 'string' ? search : '');
   const raw = p.get('app');
+  const rawBox = raw === null || raw === '' ? p.get('box') : null;
   const lang = p.get('lang');
+  const boxState = rawBox === null || rawBox === '' ? null : isAppId(rawBox) ? 'box' : 'invalid';
   return {
     id: isAppId(raw) ? raw.toLowerCase() : null,
-    state: raw === null || raw === '' ? 'none' : isAppId(raw) ? 'ok' : 'invalid',
+    box: boxState === 'box' ? rawBox.toLowerCase() : null,
+    state: boxState ?? (raw === null || raw === '' ? 'none' : isAppId(raw) ? 'ok' : 'invalid'),
     lang: lang === 'he' || lang === 'en' ? lang : null,
     nobox: p.get('nobox') === '1',
   };
@@ -66,6 +70,28 @@ export function pageUrl(origin, pathname, id, extra) {
   for (const [k, v] of Object.entries(extra || {})) if (v) url.searchParams.set(k, v);
   return url.href;
 }
+
+/** The page's own address for a box (origin and path, the box id and the given parameters; nothing else from the current URL). */
+export function boxPageUrl(origin, pathname, id, extra) {
+  const url = new URL(origin + (typeof pathname === 'string' && pathname.startsWith('/') ? pathname : '/'));
+  if (isAppId(id)) url.searchParams.set('box', id.toLowerCase());
+  for (const [k, v] of Object.entries(extra || {})) if (v) url.searchParams.set(k, v);
+  return url.href;
+}
+
+/** "Open in BOX" for a box: box://box/<id> on iPhone; on Android intent://box/<id> with this page (nobox=1) as the fallback. */
+export function openBoxInBoxUrl(platform, id, config, fallbackPage) {
+  if (!isAppId(id)) return '';
+  const boxId = id.toLowerCase();
+  if (platform === 'android' && config.androidPackage) {
+    const fallback = isHttps(fallbackPage) ? `;S.browser_fallback_url=${encodeURIComponent(fallbackPage)}` : '';
+    return `intent://box/${boxId}#Intent;scheme=${config.scheme};package=${config.androidPackage}${fallback};end`;
+  }
+  return `${config.scheme}://box/${boxId}`;
+}
+
+/** The box link BOX accepts on Paste: the same function URL as an app's, with `box=` (the string the app shares). */
+export const boxShareLink = (config, id) => (config.shareUrlBase && isAppId(id) ? config.shareUrlBase.replace(/app=$/, 'box=') + id.toLowerCase() : '');
 
 /** The "Open in BOX" address: box://app/<id> on iPhone; on Android an intent:// URL whose fallback (BOX missing) is this page with nobox=1. */
 export function openInBoxUrl(platform, id, config, fallbackPage) {
@@ -174,15 +200,18 @@ export const STRINGS = {
     getBox: 'להורדת BOX',
     getBoxFirst: 'עוד אין לכם BOX? מתחילים כאן',
     copyForLater: 'העתקת הקישור לשימוש אחרי ההתקנה',
-    copied: 'הקישור הועתק. אחרי ההתקנה פותחים את BOX, לוחצים "הדבקת קישור" ואז "הדבקה".',
-    copyFailed: 'לא הצלחנו להעתיק אוטומטית. העתיקו את הקישור למטה לפני ההתקנה, ואז פתחו את BOX, לחצו "הדבקת קישור" ואז "הדבקה".',
+    // copied, copyFailed and howTo name what both Homes show (docs/share-flow.md section 8 (b) step 3): a fresh install's first launch runs
+    // the JavaScript built into 1.1.0 ("Paste a link", Paste, then "Save to BOX"); from the next cold launch, the hand-off card's Paste, or
+    // Upload, "Add from a link", Paste. core.test.mjs checks the labels against both.
+    copied: 'הקישור הועתק. אחרי ההתקנה פותחים את BOX ולוחצים על "הדבקה" בכרטיס שבראש המסך, או על "הדבקת קישור" ואז על "הדבקה".',
+    copyFailed: 'לא הצלחנו להעתיק אוטומטית. העתיקו את הקישור למטה לפני ההתקנה, ואז פתחו את BOX ולחצו על "הדבקה" בכרטיס שבראש המסך, או על "הדבקת קישור" ואז על "הדבקה".',
     continueInstall: 'המשך להתקנה',
     closedTest: 'BOX נמצא כרגע בבדיקה סגורה. בקשו הזמנה ממי ששלח לכם את הקישור.',
     iosInvite: 'BOX ל־iPhone נמצא כרגע בבדיקה סגורה ב־TestFlight. בקשו ממי ששלח לכם את הקישור הזמנה ל־TestFlight.',
     linkLabel: 'הקישור לאפליקציה',
     copy: 'העתקה',
     copyDone: 'הועתק',
-    howTo: 'אחרי שמתקינים את BOX: פותחים אותו, לוחצים "הדבקת קישור" (או + כשיש כבר אפליקציות) ואז "הדבקה". אם BOX מציג את דף האפליקציה עם "שמור ב־BOX", לוחצים עליו כדי להוסיף אותה.',
+    howTo: 'אחרי שמתקינים את BOX: פותחים אותו ולוחצים על "הדבקה" בכרטיס שבראש המסך, או על "הדבקת קישור" ואז על "הדבקה". לא רואים אף אחד מהם? לוחצים על "העלאה", אחר כך על "הוספה מקישור" ואז על "הדבקה". אם BOX מציג את דף האפליקציה עם "שמור ב־BOX", לוחצים עליו כדי להוסיף אותה.',
     noBoxHint: 'נראה ש־BOX לא מותקן במכשיר הזה.',
     iosOnly: 'כרגע זמין רק ל־iPhone.',
     androidOnly: 'כרגע זמין רק ל־Android.',
@@ -194,13 +223,18 @@ export const STRINGS = {
     invalidBody: 'ייתכן שהוא נחתך בהעתקה. בקשו מהשולח לשלוח אותו שוב.',
     missing: 'האפליקציה הזו אינה זמינה יותר',
     missingBody: 'ייתכן שהיא הוסרה או שעוד לא פורסמה.',
-    none: 'BOX: כל האפליקציות שלך במקום אחד',
+    none: 'BOX: כל האפליקציות שלכם במקום אחד',
     noneBody: 'קטלוג ומשגר לאפליקציות קטנות. קיבלתם קישור לאפליקציה? פתחו אותו בטלפון.',
     error: 'לא הצלחנו לטעון את האפליקציה.',
     errorBody: 'בדקו את החיבור לאינטרנט ונסו שוב.',
     retry: 'נסו שוב',
     language: 'English',
     privacy: 'הדף הזה לא משתמש בעוגיות ולא עוקב אחריכם.',
+    boxShared: 'שיתפו איתכם קופסה ב־BOX',
+    boxHow: 'כדי לראות אותה צריך לפתוח את BOX ולהתחבר עם כתובת המייל שאליה היא שותפה.',
+    boxLinkLabel: 'הקישור לקופסה',
+    boxCopied: 'הקישור הועתק. אחרי ההתקנה פותחים את BOX, מתחברים עם כתובת המייל הזו, והקופסה מופיעה תחת "שותפו איתי".',
+    boxAfterInstall: 'אחרי ההתקנה: פותחים את BOX ומתחברים עם כתובת המייל שאליה הקופסה שותפה. היא מופיעה תחת "שותפו איתי", גם בלי הקישור.',
   },
   en: {
     title: 'An app was shared with you on BOX',
@@ -214,15 +248,15 @@ export const STRINGS = {
     getBox: 'Get BOX',
     getBoxFirst: "Don't have BOX yet? Start here",
     copyForLater: 'Copy the link for after installing',
-    copied: 'Link copied. After installing, open BOX, tap "Paste a link" and then Paste.',
-    copyFailed: 'We couldn\'t copy it automatically. Copy the link below before installing, then open BOX, tap "Paste a link" and then Paste.',
+    copied: 'Link copied. After installing, open BOX and tap Paste on the card at the top, or "Paste a link" and then Paste.',
+    copyFailed: 'We couldn\'t copy it automatically. Copy the link below before installing, then open BOX and tap Paste on the card at the top, or "Paste a link" and then Paste.',
     continueInstall: 'Continue to install',
     closedTest: 'BOX is in a closed test right now. Ask the person who sent this for an invite.',
     iosInvite: 'BOX for iPhone is in a closed TestFlight test right now. Ask the person who sent this for a TestFlight invite.',
     linkLabel: 'Link to this app',
     copy: 'Copy',
     copyDone: 'Copied',
-    howTo: 'After installing BOX, open it, tap "Paste a link" (or + if you already have apps) and then Paste. If BOX shows the app\'s page with "Save to BOX", tap it to add the app.',
+    howTo: 'After installing BOX, open it and tap Paste on the card at the top, or "Paste a link" and then Paste. Don\'t see either? Tap Upload, then "Add from a link", then Paste. If BOX shows the app\'s page with "Save to BOX", tap it to add the app.',
     noBoxHint: "It looks like BOX isn't installed on this device.",
     iosOnly: 'Available on iPhone only for now.',
     androidOnly: 'Available on Android only for now.',
@@ -241,6 +275,11 @@ export const STRINGS = {
     retry: 'Try again',
     language: 'עברית',
     privacy: 'This page uses no cookies and does not track you.',
+    boxShared: 'A box was shared with you on BOX',
+    boxHow: 'Open BOX and sign in with the email address it was shared with to see it.',
+    boxLinkLabel: 'Link to this box',
+    boxCopied: 'Link copied. After installing, open BOX and sign in with this email address: the box shows up under "Shared with me".',
+    boxAfterInstall: 'After installing: open BOX and sign in with the email address the box was shared with. It shows up under "Shared with me", even without the link.',
   },
 };
 

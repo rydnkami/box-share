@@ -1,37 +1,20 @@
 // The share page, DOM part (docs/share-flow.md section 6). Every catalog value goes in through textContent; no HTML string is ever parsed (core.test.mjs checks).
 // No cookies, no storage, no analytics: the only requests are config.json and one read-only catalog query with the public key.
 import {
-  appView, catalogQuery, detectPlatform, fitsDevice, getBoxLabel, installUrl, noInstallNote, openInBoxUrl, pageUrl, pickLang, platformChips, readConfig, runsInBox,
-  readParams, shareLink, t,
+  appView, boxPageUrl, boxShareLink, catalogQuery, detectPlatform, fitsDevice, getBoxLabel, installUrl, noInstallNote, openBoxInBoxUrl, openInBoxUrl, pageUrl, pickLang,
+  platformChips, readConfig, runsInBox, readParams, shareLink, t,
 } from './core.js';
 
 const params = readParams(location.search);
 const platform = detectPlatform(navigator.userAgent, navigator.maxTouchPoints);
 let lang = pickLang(params.lang, navigator.languages);
 let config = readConfig(null);
-/** 'loading' | 'found' | 'missing' | 'invalid' | 'none' | 'error' */
+/** 'loading' | 'found' | 'missing' | 'invalid' | 'none' | 'error' | 'box' (a box link: no catalog query at all) */
 let state = params.state === 'ok' ? 'loading' : params.state;
 let view = null;
 let note = ''; // a status line after Get BOX: '' | 'copied' | 'copyFailed'
 // BOX looks missing: Android came back through the intent fallback (nobox=1), or iOS stayed on the page after "Open in BOX".
 let nobox = params.nobox;
-// Best-effort automatic handoff on mobile. Browsers may block app launches without a user gesture.
-// Only try once, for a confirmed published app, and never after the Android fallback (?nobox=1).
-let autoOpenAttempted = false;
-function tryAutoOpenBox() {
-  if (autoOpenAttempted || nobox || state !== 'found' || !params.id || platform === 'desktop') return;
-  autoOpenAttempted = true;
-  // Avoid triggering a navigation before the page has rendered its manual fallback.
-  const fallback = pageUrl(location.origin, location.pathname, params.id, { lang, nobox: '1' });
-  const target = openInBoxUrl(platform, params.id, config, fallback);
-  if (!target) return;
-  // Android Chrome generally requires a user gesture for intent:// launches. We still attempt it
-  // once; if the browser rejects it, the existing "Open in BOX" button remains available.
-  setTimeout(() => {
-    if (document.visibilityState === 'hidden') return;
-    try { window.location.assign(target); } catch { /* manual button remains available */ }
-  }, 150);
-}
 
 const $ = (id) => document.getElementById(id);
 
@@ -64,8 +47,8 @@ async function copyText(text) {
 
 /** "Get BOX": copy the share link on this tap (so BOX can paste it after the install), then go to the install link. */
 async function getBox() {
-  // Only a link to an app that exists is worth carrying through the install.
-  const link = state === 'found' ? shareLink(config, params.id) : '';
+  // Only a link to an app that exists is worth carrying through the install; a box link is carried as it is (the page never looks it up).
+  const link = state === 'found' ? shareLink(config, params.id) : state === 'box' ? boxShareLink(config, params.box) : '';
   const target = installUrl(config, platform);
   if (link) {
     const ok = await copyText(link);
@@ -88,10 +71,10 @@ function link(label, href, kind) {
 }
 
 function linkBox(card) {
-  const value = shareLink(config, params.id);
+  const value = state === 'box' ? boxShareLink(config, params.box) : shareLink(config, params.id);
   if (!value) return;
   const wrap = el('div', { className: 'linkbox' });
-  wrap.append(el('label', { for: 'link-field' }, t(lang, 'linkLabel')));
+  wrap.append(el('label', { for: 'link-field' }, t(lang, state === 'box' ? 'boxLinkLabel' : 'linkLabel')));
   const row = el('div', { className: 'linkrow' });
   const field = el('input', { id: 'link-field', type: 'text', readonly: true, dir: 'ltr', value, 'aria-label': t(lang, 'linkLabel') });
   field.value = value;
@@ -120,8 +103,8 @@ function getBoxBlock(card, first) {
   }
   // Without an install link and with nothing to copy, the button would do nothing: only the closed-test line is shown. Without an
   // install link but with a found app, it only copies the link, and its label says so (no promise of an install).
-  if (target || state === 'found') card.append(button(t(lang, getBoxLabel(config, platform, first)), getBox, first ? 'primary' : 'secondary'));
-  if (note === 'copied') card.append(el('p', { className: 'note', role: 'status' }, t(lang, 'copied')));
+  if (target || state === 'found' || state === 'box') card.append(button(t(lang, getBoxLabel(config, platform, first)), getBox, first ? 'primary' : 'secondary'));
+  if (note === 'copied') card.append(el('p', { className: 'note', role: 'status' }, t(lang, state === 'box' ? 'boxCopied' : 'copied')));
   if (note === 'copyFailed') {
     card.append(el('p', { className: 'note warn', role: 'status' }, t(lang, 'copyFailed')));
     if (target) card.append(link(t(lang, 'continueInstall'), target, 'secondary'));
@@ -202,6 +185,18 @@ function render() {
     } else getBoxBlock(card, false);
     linkBox(card);
     card.append(el('p', { className: 'muted small' }, t(lang, 'howTo')));
+  } else if (state === 'box') {
+    // A box: a fixed text. Nothing about the box is read or shown (name, owner, contents, whether it exists): the page cannot know who
+    // is looking, and only members see a box, in BOX, after signing in.
+    message(card, 'boxShared', 'boxHow');
+    if (platform !== 'desktop') {
+      const fallback = boxPageUrl(location.origin, location.pathname, params.box, { lang, nobox: '1' });
+      const open = link(t(lang, 'openInBox'), openBoxInBoxUrl(platform, params.box, config, fallback), nobox ? 'secondary' : 'primary');
+      if (nobox) { card.append(el('p', { className: 'note' }, t(lang, 'noBoxHint'))); getBoxBlock(card, true); card.append(open); }
+      else { card.append(open); getBoxBlock(card, false); }
+    } else getBoxBlock(card, false);
+    linkBox(card);
+    card.append(el('p', { className: 'muted small' }, t(lang, 'boxAfterInstall')));
   } else if (state === 'missing') {
     message(card, 'missing', 'missingBody');
     getBoxBlock(card, false);
@@ -247,7 +242,6 @@ async function load() {
     state = 'error';
   }
   setLang(lang);
-  tryAutoOpenBox();
 }
 
 $('lang-toggle').addEventListener('click', () => setLang(lang === 'he' ? 'en' : 'he'));
