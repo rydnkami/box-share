@@ -202,7 +202,7 @@ export const STRINGS = {
     copyForLater: 'העתקת הקישור לשימוש אחרי ההתקנה',
     // copied, copyFailed and howTo name what both Homes show (docs/share-flow.md section 8 (b) step 3): a fresh install's first launch runs
     // the JavaScript built into 1.1.0 ("Paste a link", Paste, then "Save to BOX"); from the next cold launch, the hand-off card's Paste, or
-    // Upload, "Add from a link", Paste. core.test.mjs checks the labels against both.
+    // Store, "+ Link", Paste. core.test.mjs checks the labels against both.
     copied: 'הקישור הועתק. אחרי ההתקנה פותחים את BOX ולוחצים על "הדבקה" בכרטיס שבראש המסך, או על "הדבקת קישור" ואז על "הדבקה".',
     copyFailed: 'לא הצלחנו להעתיק אוטומטית. העתיקו את הקישור למטה לפני ההתקנה, ואז פתחו את BOX ולחצו על "הדבקה" בכרטיס שבראש המסך, או על "הדבקת קישור" ואז על "הדבקה".',
     continueInstall: 'המשך להתקנה',
@@ -211,7 +211,7 @@ export const STRINGS = {
     linkLabel: 'הקישור לאפליקציה',
     copy: 'העתקה',
     copyDone: 'הועתק',
-    howTo: 'אחרי שמתקינים את BOX: פותחים אותו ולוחצים על "הדבקה" בכרטיס שבראש המסך, או על "הדבקת קישור" ואז על "הדבקה". לא רואים אף אחד מהם? לוחצים על "העלאה", אחר כך על "הוספה מקישור" ואז על "הדבקה". אם BOX מציג את דף האפליקציה עם "שמור ב־BOX", לוחצים עליו כדי להוסיף אותה.',
+    howTo: 'אחרי שמתקינים את BOX: פותחים אותו ולוחצים על "הדבקה" בכרטיס שבראש המסך, או על "הדבקת קישור" ואז על "הדבקה". לא רואים אף אחד מהם? פותחים את "חנות", לוחצים על "＋ קישור" ואז על "הדבקה". אם BOX מציג את דף האפליקציה עם "שמור ב־BOX", לוחצים עליו כדי להוסיף אותה.',
     noBoxHint: 'נראה ש־BOX לא מותקן במכשיר הזה.',
     iosOnly: 'כרגע זמין רק ל־iPhone.',
     androidOnly: 'כרגע זמין רק ל־Android.',
@@ -256,7 +256,7 @@ export const STRINGS = {
     linkLabel: 'Link to this app',
     copy: 'Copy',
     copyDone: 'Copied',
-    howTo: 'After installing BOX, open it and tap Paste on the card at the top, or "Paste a link" and then Paste. Don\'t see either? Tap Upload, then "Add from a link", then Paste. If BOX shows the app\'s page with "Save to BOX", tap it to add the app.',
+    howTo: 'After installing BOX, open it and tap Paste on the card at the top, or "Paste a link" and then Paste. Don\'t see either? Open the Store, tap "＋ Link", then Paste. If BOX shows the app\'s page with "Save to BOX", tap it to add the app.',
     noBoxHint: "It looks like BOX isn't installed on this device.",
     iosOnly: 'Available on iPhone only for now.',
     androidOnly: 'Available on Android only for now.',
