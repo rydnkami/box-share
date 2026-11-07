@@ -9,9 +9,11 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f4f6fb" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d1019" media="(prefers-color-scheme: dark)">
-<title>שיתפו איתכם אפליקציה ב־BOX</title>
-<meta name="description" content="An app was shared with you on BOX. Open it in BOX, or get BOX first.">
-<meta property="og:title" content="An app was shared with you on BOX · שיתפו איתכם אפליקציה ב־BOX">
+<!-- The same page opens app links and box links (box links come here directly, docs/share-flow.md section 6.1), and a static host has
+     one preview for both, so the title and the previews name neither; share.js sets the title once it knows. -->
+<title>שיתפו איתכם ב־BOX</title>
+<meta name="description" content="An app or a box was shared with you on BOX. Open it in BOX, or get BOX first.">
+<meta property="og:title" content="Shared with you on BOX · שיתפו איתכם ב־BOX">
 <meta property="og:description" content="Open it in BOX, or get BOX first. · פתחו ב־BOX, או התקינו את BOX קודם.">
 <meta property="og:type" content="website">
 <!-- Absolute, because crawlers need it. The alpha host (docs/share-flow.md section 14): a GitHub Pages project site, so everything else

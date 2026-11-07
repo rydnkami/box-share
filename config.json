@@ -2,6 +2,7 @@
   "supabaseUrl": "https://vrqeitjcbstgnxufcrff.supabase.co",
   "publishableKey": "sb_publishable_1gIKUfRQ_UoucTiKqtMCsA_Yggv0HIJ",
   "shareUrlBase": "https://vrqeitjcbstgnxufcrff.supabase.co/functions/v1/box-share?app=",
+  "boxUrlBase": "https://rydnkami.github.io/box-share/?box=",
   "scheme": "box",
   "androidPackage": "com.amitseren.box",
   "install": {
